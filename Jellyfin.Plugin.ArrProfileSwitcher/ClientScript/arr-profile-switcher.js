@@ -61,11 +61,27 @@
         delete statusCache[itemId];
     }
 
+    // Self-contained toast -- this Jellyfin version doesn't expose a global `require`
+    // at all (confirmed live: `ReferenceError: require is not defined`), so the AMD
+    // 'toast' module this originally tried to use can never load; every message was
+    // silently only reaching the console, never the user.
     function showToast(message) {
+        console.log('[ArrProfileSwitcher] ' + message);
         try {
-            require(['toast'], function (toast) { toast(message); });
+            var el = document.createElement('div');
+            el.textContent = message;
+            el.style.cssText = 'position:fixed;left:50%;bottom:5em;transform:translateX(-50%);'
+                + 'z-index:10001;background:#202020;color:#fff;padding:0.75em 1.25em;'
+                + 'border-radius:4px;box-shadow:0 4px 16px rgba(0,0,0,0.5);font-size:0.95em;'
+                + 'max-width:80vw;text-align:center;opacity:0;transition:opacity 0.2s;';
+            document.body.appendChild(el);
+            requestAnimationFrame(function () { el.style.opacity = '1'; });
+            setTimeout(function () {
+                el.style.opacity = '0';
+                setTimeout(function () { if (el.parentNode) { el.parentNode.removeChild(el); } }, 250);
+            }, 3000);
         } catch (e) {
-            console.log('[ArrProfileSwitcher] ' + message);
+            // Nothing more to fall back to; the console.log above already ran.
         }
     }
 
@@ -300,43 +316,70 @@
         }
     }, true);
 
-    // Detail-page button: best-effort bonus surface. Reuses Jellyfin's own actionsheet
-    // module for the option list instead of a bespoke dropdown; if that module isn't
-    // available in a given Jellyfin version, this fails silently -- the three-dot menu
-    // entry above is the reliable path either way.
-    function showOptionsActionSheet(itemId, anchorEl, options) {
-        try {
-            require(['actionsheet'], function (actionsheet) {
-                var menuItems = options.map(function (o) {
-                    return {
-                        id: o.OptionId,
-                        name: o.Label + (o.IsCurrent ? ' (current)' : ''),
-                        selected: o.IsCurrent,
-                        icon: o.IsCurrent ? 'check_circle' : 'hd'
-                    };
-                });
+    // Detail-page button: best-effort bonus surface. Builds its own small dropdown
+    // rather than going through Jellyfin's internal 'actionsheet' AMD module -- this
+    // Jellyfin version doesn't expose a global `require` at all (confirmed live:
+    // `ReferenceError: require is not defined`), so that module can never load here.
+    // The three-dot menu entry is still the primary/reliable surface either way.
+    var openDropdown = null;
 
-                actionsheet.show({
-                    items: menuItems,
-                    positionTo: anchorEl,
-                    callback: function (id) {
-                        var chosen = null;
-                        for (var i = 0; i < options.length; i++) {
-                            if (String(options[i].OptionId) === String(id)) {
-                                chosen = options[i];
-                                break;
-                            }
-                        }
-
-                        if (chosen && !chosen.IsCurrent) {
-                            applyOption(itemId, id);
-                        }
-                    }
-                });
-            });
-        } catch (err) {
-            console.debug('[ArrProfileSwitcher] actionsheet module unavailable', err);
+    function closeOpenDropdown() {
+        if (openDropdown && openDropdown.parentNode) {
+            openDropdown.parentNode.removeChild(openDropdown);
         }
+        openDropdown = null;
+    }
+
+    function showOptionsActionSheet(itemId, anchorEl, options) {
+        closeOpenDropdown();
+
+        var rect = anchorEl.getBoundingClientRect();
+        var menu = document.createElement('div');
+        menu.className = 'apsDetailDropdown';
+        menu.style.cssText = 'position:fixed;z-index:10000;min-width:12em;'
+            + 'top:' + (rect.bottom + 4) + 'px;left:' + rect.left + 'px;'
+            + 'background:#202020;border:1px solid rgba(255,255,255,0.2);border-radius:4px;'
+            + 'box-shadow:0 4px 16px rgba(0,0,0,0.5);overflow:hidden;';
+
+        options.forEach(function (option) {
+            var item = document.createElement('button');
+            item.type = 'button';
+            item.textContent = option.Label + (option.IsCurrent ? ' (current)' : '');
+            item.disabled = !!option.IsCurrent;
+            item.style.cssText = 'display:block;width:100%;text-align:left;padding:0.6em 1em;'
+                + 'background:none;border:none;color:inherit;font-size:0.95em;cursor:pointer;'
+                + (option.IsCurrent ? 'opacity:0.6;' : '');
+            if (!option.IsCurrent) {
+                item.addEventListener('mouseenter', function () { item.style.background = 'rgba(255,255,255,0.1)'; });
+                item.addEventListener('mouseleave', function () { item.style.background = 'none'; });
+                item.addEventListener('click', function () {
+                    console.debug('[ArrProfileSwitcher] detail dropdown option clicked', option.Label);
+                    closeOpenDropdown();
+                    applyOption(itemId, option.OptionId);
+                });
+            }
+            menu.appendChild(item);
+        });
+
+        document.body.appendChild(menu);
+        openDropdown = menu;
+
+        // Close on outside click or Escape; deferred registration so the click that
+        // opened the menu doesn't immediately close it via bubbling.
+        setTimeout(function () {
+            document.addEventListener('click', function onOutsideClick(e) {
+                if (!menu.contains(e.target)) {
+                    document.removeEventListener('click', onOutsideClick);
+                    closeOpenDropdown();
+                }
+            });
+            document.addEventListener('keydown', function onEscape(e) {
+                if (e.key === 'Escape') {
+                    document.removeEventListener('keydown', onEscape);
+                    closeOpenDropdown();
+                }
+            });
+        }, 0);
     }
 
     function injectDetailButton() {
