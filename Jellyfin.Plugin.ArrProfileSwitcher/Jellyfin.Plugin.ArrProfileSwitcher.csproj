@@ -47,6 +47,11 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- Lets the test project call TryGetProviderId directly without a Jellyfin runtime. -->
+    <InternalsVisibleTo Include="Jellyfin.Plugin.ArrProfileSwitcher.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
     <None Remove="Configuration\arrprofileswitcher.html" />
     <EmbeddedResource Include="Configuration\arrprofileswitcher.html" />
     <None Remove="ClientScript\arr-profile-switcher.js" />

@@ -17,6 +17,20 @@ namespace Jellyfin.Plugin.ArrProfileSwitcher.Services;
 public class ArrUpgradeThrottleState
 {
     private readonly ConcurrentDictionary<Guid, DateTime> _lastRequestUtc = new();
+    private readonly Func<DateTime> _utcNow;
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="ArrUpgradeThrottleState"/> class.
+    /// </summary>
+    /// <param name="utcNow">
+    /// Clock used for cooldown timestamps. Defaults to <see cref="DateTime.UtcNow"/>;
+    /// overridable only so tests can exercise the cooldown window deterministically
+    /// without real sleeps.
+    /// </param>
+    public ArrUpgradeThrottleState(Func<DateTime>? utcNow = null)
+    {
+        _utcNow = utcNow ?? (() => DateTime.UtcNow);
+    }
 
     /// <summary>
     /// Attempts to reserve an upgrade slot for an item.
@@ -26,15 +40,33 @@ public class ArrUpgradeThrottleState
     /// <returns><c>true</c> if no request for this item was reserved within <paramref name="window"/>.</returns>
     public bool TryReserve(Guid itemId, TimeSpan window)
     {
-        var now = DateTime.UtcNow;
+        var now = _utcNow();
+        var reserved = false;
 
-        if (_lastRequestUtc.TryGetValue(itemId, out var last) && now - last < window)
-        {
-            return false;
-        }
+        // AddOrUpdate's factories can run more than once under contention, but the
+        // dictionary guarantees only one call's return value is ever stored per key —
+        // so exactly one concurrent caller observes reserved=true even when several
+        // race here for the same itemId (fixes a prior TOCTOU: separate
+        // TryGetValue + indexer-set let two concurrent requests both pass the check).
+        _lastRequestUtc.AddOrUpdate(
+            itemId,
+            _ =>
+            {
+                reserved = true;
+                return now;
+            },
+            (_, last) =>
+            {
+                if (now - last < window)
+                {
+                    return last;
+                }
 
-        _lastRequestUtc[itemId] = now;
-        return true;
+                reserved = true;
+                return now;
+            });
+
+        return reserved;
     }
 
     /// <summary>
@@ -51,7 +83,7 @@ public class ArrUpgradeThrottleState
             return TimeSpan.Zero;
         }
 
-        var elapsed = DateTime.UtcNow - last;
+        var elapsed = _utcNow() - last;
         return elapsed >= window ? TimeSpan.Zero : window - elapsed;
     }
 }

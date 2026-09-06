@@ -25,4 +25,6 @@ artifacts:
 changelog: >
   1.0.0.0 - Admin-curated profile-option mapping. GET /ArrProfileSwitcher/Status,
   POST /ArrProfileSwitcher/Upgrade. File Transformation client-script injection
-  (menu + detail button).
+  (menu + detail button). Per-user item-visibility check on Status/Upgrade,
+  atomic upgrade-cooldown, safe parsing of Radarr/Sonarr responses, HTTP
+  client timeout, no hardcoded Radarr/Sonarr URL defaults.

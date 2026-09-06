@@ -6,9 +6,9 @@ namespace Jellyfin.Plugin.ArrProfileSwitcher.Services;
 /// serves it. Registered by <see cref="StartupService"/>.
 /// </summary>
 /// <remarks>
-/// Mirrors the same registration + patch-method shape used live by
+/// Mirrors the same registration + patch-method shape used by
 /// <c>Jellyfin.Plugin.HomeScreenSections.Helpers.TransformationPatches.IndexHtml</c>
-/// (also installed on this NUC's Jellyfin) — confirmed via that plugin's public source.
+/// (a popular community plugin) — confirmed via that plugin's public source.
 /// </remarks>
 public static class TransformationPatches
 {

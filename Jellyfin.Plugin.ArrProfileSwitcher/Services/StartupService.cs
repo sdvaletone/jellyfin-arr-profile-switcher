@@ -19,9 +19,9 @@ namespace Jellyfin.Plugin.ArrProfileSwitcher.Services;
 /// Plugins are loaded into separate <see cref="AssemblyLoadContext"/>s, so File
 /// Transformation cannot be referenced directly — registration goes through
 /// reflection against its <c>PluginInterface.RegisterTransformation(JObject)</c>
-/// method, exactly as documented in that plugin's README and as used live by
-/// <c>Jellyfin.Plugin.HomeScreenSections.Services.StartupService</c> (also installed
-/// on this NUC's Jellyfin). Done as an <see cref="IScheduledTask"/> with a startup
+/// method, exactly as documented in that plugin's README and as used by
+/// <c>Jellyfin.Plugin.HomeScreenSections.Services.StartupService</c> (a popular
+/// community plugin). Done as an <see cref="IScheduledTask"/> with a startup
 /// trigger — not in <see cref="PluginServiceRegistrator"/> — because File
 /// Transformation's own services may not be registered into Jellyfin's DI container
 /// yet while plugins are still being loaded (same reasoning HomeScreenSections uses).

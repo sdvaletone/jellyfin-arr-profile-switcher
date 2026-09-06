@@ -34,6 +34,7 @@ namespace Jellyfin.Plugin.ArrProfileSwitcher.Api;
 public class ArrProfileSwitcherController : ControllerBase
 {
     private readonly ILibraryManager _libraryManager;
+    private readonly IUserManager _userManager;
     private readonly RadarrClient _radarr;
     private readonly SonarrClient _sonarr;
     private readonly ArrUpgradeThrottleState _throttle;
@@ -43,22 +44,38 @@ public class ArrProfileSwitcherController : ControllerBase
     /// Initializes a new instance of the <see cref="ArrProfileSwitcherController"/> class.
     /// </summary>
     /// <param name="libraryManager">Instance of the <see cref="ILibraryManager"/> interface.</param>
+    /// <param name="userManager">Instance of the <see cref="IUserManager"/> interface.</param>
     /// <param name="radarr">The Radarr client.</param>
     /// <param name="sonarr">The Sonarr client.</param>
     /// <param name="throttle">The shared upgrade-cooldown state.</param>
     /// <param name="logger">Instance of the <see cref="ILogger{TCategoryName}"/> interface.</param>
     public ArrProfileSwitcherController(
         ILibraryManager libraryManager,
+        IUserManager userManager,
         RadarrClient radarr,
         SonarrClient sonarr,
         ArrUpgradeThrottleState throttle,
         ILogger<ArrProfileSwitcherController> logger)
     {
         _libraryManager = libraryManager;
+        _userManager = userManager;
         _radarr = radarr;
         _sonarr = sonarr;
         _throttle = throttle;
         _logger = logger;
+    }
+
+    /// <summary>
+    /// Resolves the authenticated caller from the current request, for the
+    /// item-visibility check on <see cref="GetStatus"/>/<see cref="PostUpgrade"/> — both
+    /// endpoints are open to any logged-in user (see class remarks), so a restricted or
+    /// parental-controlled item must not be accessible via a guessed/enumerated item id.
+    /// </summary>
+    /// <returns>The calling <see cref="MediaBrowser.Controller.Library.IUserManager"/> user, or <c>null</c> if it can't be resolved.</returns>
+    private Jellyfin.Database.Implementations.Entities.User? GetRequestingUser()
+    {
+        var name = HttpContext.User?.Identity?.Name;
+        return string.IsNullOrEmpty(name) ? null : _userManager.GetUserByName(name);
     }
 
     /// <summary>
@@ -104,6 +121,14 @@ public class ArrProfileSwitcherController : ControllerBase
         var item = _libraryManager.GetItemById(itemId);
         if (item is null)
         {
+            return Ok(new StatusDto { Tracked = false, Message = "Item not found." });
+        }
+
+        var requestingUser = GetRequestingUser();
+        if (requestingUser is null || !item.IsVisible(requestingUser))
+        {
+            // Deliberately identical to the "doesn't exist" response — a restricted item
+            // must not be distinguishable from a nonexistent one via this endpoint.
             return Ok(new StatusDto { Tracked = false, Message = "Item not found." });
         }
 
@@ -171,8 +196,15 @@ public class ArrProfileSwitcherController : ControllerBase
             return Ok(new UpgradeResultDto { Success = false, Message = "Item not found." });
         }
 
+        var callingUser = GetRequestingUser();
+        if (callingUser is null || !item.IsVisible(callingUser))
+        {
+            // Deliberately identical to the "doesn't exist" response — see GetStatus.
+            return Ok(new UpgradeResultDto { Success = false, Message = "Item not found." });
+        }
+
         var config = Plugin.Instance?.Configuration ?? new PluginConfiguration();
-        var requestingUser = HttpContext.User?.Identity?.Name ?? "unknown";
+        var requestingUser = callingUser.Username;
 
         if (item is Movie movie)
         {
@@ -193,13 +225,14 @@ public class ArrProfileSwitcherController : ControllerBase
                 return Ok(new UpgradeResultDto { Success = false, Message = "Not found in Radarr." });
             }
 
+            var movieId = record["id"]?.GetValue<int>();
             return await ApplyAsync(
                 request.ItemId,
                 item.Name,
                 record["qualityProfileId"]?.GetValue<int>() ?? -1,
                 option,
                 async () => await _radarr.SetQualityProfileAsync(record, option.ArrProfileId, cancellationToken).ConfigureAwait(false),
-                async () => await _radarr.TriggerSearchAsync(record["id"]!.GetValue<int>(), cancellationToken).ConfigureAwait(false),
+                async () => movieId is int id && await _radarr.TriggerSearchAsync(id, cancellationToken).ConfigureAwait(false),
                 requestingUser,
                 config.ThrottleMinutes).ConfigureAwait(false);
         }
@@ -223,13 +256,14 @@ public class ArrProfileSwitcherController : ControllerBase
                 return Ok(new UpgradeResultDto { Success = false, Message = "Not found in Sonarr." });
             }
 
+            var seriesId = record["id"]?.GetValue<int>();
             return await ApplyAsync(
                 request.ItemId,
                 item.Name,
                 record["qualityProfileId"]?.GetValue<int>() ?? -1,
                 option,
                 async () => await _sonarr.SetQualityProfileAsync(record, option.ArrProfileId, cancellationToken).ConfigureAwait(false),
-                async () => await _sonarr.TriggerSearchAsync(record["id"]!.GetValue<int>(), cancellationToken).ConfigureAwait(false),
+                async () => seriesId is int id && await _sonarr.TriggerSearchAsync(id, cancellationToken).ConfigureAwait(false),
                 requestingUser,
                 config.ThrottleMinutes).ConfigureAwait(false);
         }
@@ -316,7 +350,7 @@ public class ArrProfileSwitcherController : ControllerBase
         return status;
     }
 
-    private static bool TryGetProviderId(System.Collections.Generic.Dictionary<string, string> providerIds, string key, out int value)
+    internal static bool TryGetProviderId(System.Collections.Generic.Dictionary<string, string> providerIds, string key, out int value)
     {
         value = 0;
         return providerIds is not null

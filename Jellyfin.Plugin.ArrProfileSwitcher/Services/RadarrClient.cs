@@ -7,9 +7,9 @@ using Microsoft.Extensions.Logging;
 namespace Jellyfin.Plugin.ArrProfileSwitcher.Services;
 
 /// <summary>
-/// Thin Radarr v3 REST client. Endpoint shapes confirmed live against this repo's own
-/// NUC Radarr instance (movie lookup by <c>tmdbId</c>, quality profile names
-/// <c>Movies-1080p</c>/<c>Movies-4K</c>/etc. from Recyclarr's TRaSH sync).
+/// Thin Radarr v3 REST client (movie lookup by <c>tmdbId</c>; quality profile names are
+/// whatever the admin has configured in Radarr — e.g. <c>Movies-1080p</c>/<c>Movies-4K</c>
+/// if following Recyclarr/TRaSH-guide naming conventions).
 /// </summary>
 public class RadarrClient : ArrClientBase
 {
@@ -24,8 +24,7 @@ public class RadarrClient : ArrClientBase
     }
 
     /// <inheritdoc />
-    protected override string BaseUrl =>
-        Plugin.Instance?.Configuration.RadarrUrl is { Length: > 0 } url ? url : "http://radarr:7878";
+    protected override string BaseUrl => Plugin.Instance?.Configuration.RadarrUrl ?? string.Empty;
 
     /// <inheritdoc />
     protected override string ApiKeyEnvVar => "RADARR_API_KEY";
@@ -48,7 +47,12 @@ public class RadarrClient : ArrClientBase
     /// <returns><c>true</c> on success.</returns>
     public Task<bool> SetQualityProfileAsync(JsonObject movie, int qualityProfileId, CancellationToken cancellationToken)
     {
-        var movieId = movie["id"]!.GetValue<int>();
+        if (movie["id"]?.GetValue<int>() is not int movieId)
+        {
+            Logger.LogWarning("Radarr movie record had no usable 'id' field; cannot update quality profile.");
+            return Task.FromResult(false);
+        }
+
         return UpdateQualityProfileAsync($"/api/v3/movie/{movieId}", movie, qualityProfileId, cancellationToken);
     }
 

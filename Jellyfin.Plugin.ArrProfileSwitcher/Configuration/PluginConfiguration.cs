@@ -16,15 +16,16 @@ namespace Jellyfin.Plugin.ArrProfileSwitcher.Configuration;
 public class PluginConfiguration : BasePluginConfiguration
 {
     /// <summary>
-    /// Gets or sets the Radarr base URL. Defaults to the container DNS name on the
-    /// shared `media_stack` Docker network — traffic never leaves the host.
+    /// Gets or sets the Radarr base URL (e.g. <c>http://radarr:7878</c> if Radarr runs
+    /// alongside Jellyfin on the same internal Docker network). Empty until the admin
+    /// configures it — there's no universal default across installs.
     /// </summary>
-    public string RadarrUrl { get; set; } = "http://radarr:7878";
+    public string RadarrUrl { get; set; } = string.Empty;
 
     /// <summary>
-    /// Gets or sets the Sonarr base URL. Same network-locality rationale as <see cref="RadarrUrl"/>.
+    /// Gets or sets the Sonarr base URL. Same rationale as <see cref="RadarrUrl"/>.
     /// </summary>
-    public string SonarrUrl { get; set; } = "http://sonarr:8989";
+    public string SonarrUrl { get; set; } = string.Empty;
 
     /// <summary>
     /// Gets or sets the cooldown, in minutes, before the same item can be switched

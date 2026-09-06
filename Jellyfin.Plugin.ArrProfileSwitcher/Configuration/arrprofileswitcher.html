@@ -23,12 +23,12 @@
 
                 <div class="inputContainer">
                     <label class="inputLabel inputLabelUnfocused" for="ApsRadarrUrl">Radarr URL</label>
-                    <input id="ApsRadarrUrl" name="ApsRadarrUrl" type="text" is="emby-input" required />
+                    <input id="ApsRadarrUrl" name="ApsRadarrUrl" type="text" is="emby-input" placeholder="e.g. http://radarr:7878" required />
                 </div>
 
                 <div class="inputContainer">
                     <label class="inputLabel inputLabelUnfocused" for="ApsSonarrUrl">Sonarr URL</label>
-                    <input id="ApsSonarrUrl" name="ApsSonarrUrl" type="text" is="emby-input" required />
+                    <input id="ApsSonarrUrl" name="ApsSonarrUrl" type="text" is="emby-input" placeholder="e.g. http://sonarr:8989" required />
                 </div>
 
                 <div class="inputContainer">
@@ -224,8 +224,8 @@
             function loadConfiguration() {
                 Dashboard.showLoadingMsg();
                 return ApiClient.getPluginConfiguration(ArrProfileSwitcherConfig.pluginUniqueId).then(function (config) {
-                    page.querySelector('#ApsRadarrUrl').value = config.RadarrUrl || 'http://radarr:7878';
-                    page.querySelector('#ApsSonarrUrl').value = config.SonarrUrl || 'http://sonarr:8989';
+                    page.querySelector('#ApsRadarrUrl').value = config.RadarrUrl || '';
+                    page.querySelector('#ApsSonarrUrl').value = config.SonarrUrl || '';
                     page.querySelector('#ApsThrottleMinutes').value = config.ThrottleMinutes || 10;
 
                     radarrState = seedStateFromSavedOptions(config.RadarrProfileOptions);
@@ -275,8 +275,8 @@
                 Dashboard.showLoadingMsg();
 
                 ApiClient.getPluginConfiguration(ArrProfileSwitcherConfig.pluginUniqueId).then(function (config) {
-                    config.RadarrUrl = (page.querySelector('#ApsRadarrUrl').value || '').trim() || 'http://radarr:7878';
-                    config.SonarrUrl = (page.querySelector('#ApsSonarrUrl').value || '').trim() || 'http://sonarr:8989';
+                    config.RadarrUrl = (page.querySelector('#ApsRadarrUrl').value || '').trim();
+                    config.SonarrUrl = (page.querySelector('#ApsSonarrUrl').value || '').trim();
 
                     var throttle = toInt(page.querySelector('#ApsThrottleMinutes').value, 10);
                     config.ThrottleMinutes = throttle > 0 ? throttle : 10;
