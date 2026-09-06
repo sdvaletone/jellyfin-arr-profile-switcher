@@ -17,6 +17,24 @@
     var menuObserver = null;
     var statusCache = {};
 
+    // ApiClient.ajax() on this Jellyfin version resolves with the raw fetch() Response
+    // for a plain GET/POST rather than an auto-parsed body (confirmed live: the browser
+    // console showed {type: basic, status: 200, ok: true, ...} coming out of .ajax(),
+    // not the JSON payload) -- unlike ApiClient.getJSON(), which does parse. Handle
+    // both shapes so this keeps working regardless of which one a given server version
+    // returns, instead of silently treating an unparsed Response as falsy data.
+    function parseAjaxResponse(resp) {
+        if (resp && typeof resp.json === 'function' && typeof resp.ok === 'boolean') {
+            return resp.json();
+        }
+
+        if (typeof resp === 'string') {
+            return Promise.resolve(resp ? JSON.parse(resp) : null);
+        }
+
+        return Promise.resolve(resp);
+    }
+
     function getStatus(itemId) {
         if (statusCache[itemId]) {
             return statusCache[itemId];
@@ -24,8 +42,7 @@
 
         var url = ApiClient.getUrl('ArrProfileSwitcher/Status', { itemId: itemId });
         console.debug('[ArrProfileSwitcher] Status request for ' + itemId + ' -> ' + url);
-        var promise = ApiClient.ajax({ type: 'GET', url: url }).then(function (resp) {
-            var data = typeof resp === 'string' ? JSON.parse(resp) : resp;
+        var promise = ApiClient.ajax({ type: 'GET', url: url }).then(parseAjaxResponse).then(function (data) {
             console.debug('[ArrProfileSwitcher] Status response for ' + itemId + ':', data);
             return data;
         }).catch(function (err) {
@@ -79,8 +96,7 @@
             url: url,
             data: body,
             contentType: 'application/json'
-        }).then(function (response) {
-            var data = typeof response === 'string' ? JSON.parse(response) : response;
+        }).then(parseAjaxResponse).then(function (data) {
             console.debug('[ArrProfileSwitcher] Upgrade response', data);
             showToast((data && data.Message) ? data.Message : 'Quality profile updated');
             invalidateStatus(itemId);
@@ -98,12 +114,15 @@
         btn.setAttribute('data-option-id', option.OptionId);
 
         var label = option.Label + (option.IsCurrent ? ' (current)' : '');
+        var iconName = option.IsCurrent ? 'check_circle' : 'hd';
         btn.innerHTML =
-            '<span class="actionsheetMenuItemIcon listItemIcon listItemIcon-transparent material-icons ' +
-                (option.IsCurrent ? 'check_circle' : 'hd') + '" aria-hidden="true"></span>' +
+            '<span class="actionsheetMenuItemIcon listItemIcon listItemIcon-transparent material-icons" aria-hidden="true"></span>' +
             '<div class="listItemBody actionsheetListItemBody">' +
                 '<div class="listItemBodyText actionSheetItemText"></div>' +
             '</div>';
+        // Material Icons renders from the span's text content (a font ligature), not a
+        // CSS class -- set via textContent, not baked into the class list above.
+        btn.querySelector('.actionsheetMenuItemIcon').textContent = iconName;
         // Label via textContent (never innerHTML) so the admin-configured label can
         // never inject markup even though it's admin-supplied, not user-supplied.
         btn.querySelector('.actionSheetItemText').textContent = label;
@@ -360,9 +379,12 @@
                 btn.title = 'Change quality profile';
                 btn.innerHTML =
                     '<div class="detailButton-content">' +
-                        '<span class="material-icons detailButton-icon hd" aria-hidden="true"></span>' +
+                        '<span class="material-icons detailButton-icon" aria-hidden="true"></span>' +
                         '<span class="detailButton-icon-text"></span>' +
                     '</div>';
+                // Material Icons renders from the span's text content (a font ligature),
+                // not a CSS class.
+                btn.querySelector('.detailButton-icon').textContent = 'hd';
                 btn.querySelector('.detailButton-icon-text').textContent = status.CurrentProfileName || 'Quality';
 
                 btn.addEventListener('click', function (e) {
