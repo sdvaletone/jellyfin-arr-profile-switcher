@@ -7,6 +7,7 @@ using Jellyfin.Plugin.ArrProfileSwitcher.Api.Models;
 using Jellyfin.Plugin.ArrProfileSwitcher.Configuration;
 using Jellyfin.Plugin.ArrProfileSwitcher.Services;
 using MediaBrowser.Common.Api;
+using MediaBrowser.Controller.Entities;
 using MediaBrowser.Controller.Entities.Movies;
 using MediaBrowser.Controller.Entities.TV;
 using MediaBrowser.Controller.Library;
@@ -151,7 +152,8 @@ public class ArrProfileSwitcherController : ControllerBase
             return Ok(BuildStatus(config.RadarrProfileOptions, currentProfileId));
         }
 
-        if (item is Series series)
+        var series = ResolveSeriesForProfileSwitch(item);
+        if (series is not null)
         {
             if (!TryGetProviderId(series.ProviderIds, "Tvdb", out var tvdbId))
             {
@@ -237,7 +239,8 @@ public class ArrProfileSwitcherController : ControllerBase
                 config.ThrottleMinutes).ConfigureAwait(false);
         }
 
-        if (item is Series series)
+        var series = ResolveSeriesForProfileSwitch(item);
+        if (series is not null)
         {
             var option = config.SonarrProfileOptions.FirstOrDefault(o => o.OptionId == request.OptionId);
             if (option is null)
@@ -257,9 +260,13 @@ public class ArrProfileSwitcherController : ControllerBase
             }
 
             var seriesId = record["id"]?.GetValue<int>();
+            // Throttle/log against the resolved SERIES's own id/name (not request.ItemId) --
+            // Sonarr has no per-season quality profile, so a request from a Season page and
+            // one from that same show's Series page are the same underlying operation and
+            // must share one cooldown, not bypass it via two different Jellyfin item ids.
             return await ApplyAsync(
-                request.ItemId,
-                item.Name,
+                series.Id,
+                series.Name,
                 record["qualityProfileId"]?.GetValue<int>() ?? -1,
                 option,
                 async () => await _sonarr.SetQualityProfileAsync(record, option.ArrProfileId, cancellationToken).ConfigureAwait(false),
@@ -325,6 +332,32 @@ public class ArrProfileSwitcherController : ControllerBase
             Message = searchOk ? $"Switched to {option.Label} — search started." : $"Switched to {option.Label}, but the search could not be started.",
             SearchTriggered = searchOk
         });
+    }
+
+    /// <summary>
+    /// Resolves the Sonarr-tracked <see cref="Series"/> target for an item: the
+    /// <see cref="Series"/> itself, or — since Sonarr has no per-season quality profile —
+    /// a <see cref="Season"/>'s parent series, so a season page switches/displays the same
+    /// series-wide profile a series page would. Deliberately does NOT resolve an
+    /// <see cref="Episode"/>'s parent series: per-episode switching was never wanted (see
+    /// class remarks / README), and an episode is one series-level operation away from
+    /// being indistinguishable from just using the series or a season page.
+    /// </summary>
+    /// <param name="item">The requested Jellyfin item.</param>
+    /// <returns>The target <see cref="Series"/>, or <c>null</c> if none applies.</returns>
+    private Series? ResolveSeriesForProfileSwitch(BaseItem item)
+    {
+        if (item is Series series)
+        {
+            return series;
+        }
+
+        if (item is Season season)
+        {
+            return season.Series ?? (season.SeriesId != Guid.Empty ? _libraryManager.GetItemById(season.SeriesId) as Series : null);
+        }
+
+        return null;
     }
 
     private static StatusDto BuildStatus(ProfileOptionMapping[] configuredOptions, int currentProfileId)

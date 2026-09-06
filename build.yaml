@@ -27,4 +27,6 @@ changelog: >
   POST /ArrProfileSwitcher/Upgrade. File Transformation client-script injection
   (menu + detail button). Per-user item-visibility check on Status/Upgrade,
   atomic upgrade-cooldown, safe parsing of Radarr/Sonarr responses, HTTP
-  client timeout, no hardcoded Radarr/Sonarr URL defaults.
+  client timeout, no hardcoded Radarr/Sonarr URL defaults. TV seasons are now
+  also switchable (resolves to the parent series, sharing its cooldown), not
+  just the series itself.

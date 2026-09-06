@@ -1,9 +1,11 @@
 # Jellyfin.Plugin.ArrProfileSwitcher
 
-Profile-switch menu item on the item detail page / three-dot menu, scoped to movies
-and series (not episodes). Options are admin-curated per Radarr/Sonarr instance (e.g.
-1080p / 4K); switching applies the profile and triggers a search. No Radarr/Sonarr
-login needed — your users never see a Radarr/Sonarr API key or URL.
+Profile-switch menu item on the item detail page / three-dot menu, scoped to movies,
+series, and seasons (not episodes — Sonarr has no per-season quality profile, so a
+season page switches/displays the same series-wide profile a series page would).
+Options are admin-curated per Radarr/Sonarr instance (e.g. 1080p / 4K); switching
+applies the profile and triggers a search. No Radarr/Sonarr login needed — your users
+never see a Radarr/Sonarr API key or URL.
 
 ## Requirements
 
