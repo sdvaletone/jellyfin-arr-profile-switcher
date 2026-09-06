@@ -7,7 +7,6 @@ using Jellyfin.Plugin.ArrProfileSwitcher.Api.Models;
 using Jellyfin.Plugin.ArrProfileSwitcher.Configuration;
 using Jellyfin.Plugin.ArrProfileSwitcher.Services;
 using MediaBrowser.Common.Api;
-using MediaBrowser.Controller.Entities;
 using MediaBrowser.Controller.Entities.Movies;
 using MediaBrowser.Controller.Entities.TV;
 using MediaBrowser.Controller.Library;
@@ -108,8 +107,6 @@ public class ArrProfileSwitcherController : ControllerBase
             return Ok(new StatusDto { Tracked = false, Message = "Item not found." });
         }
 
-        item = ResolveEffectiveItem(item);
-
         var config = Plugin.Instance?.Configuration ?? new PluginConfiguration();
 
         if (item is Movie movie)
@@ -173,8 +170,6 @@ public class ArrProfileSwitcherController : ControllerBase
         {
             return Ok(new UpgradeResultDto { Success = false, Message = "Item not found." });
         }
-
-        item = ResolveEffectiveItem(item);
 
         var config = Plugin.Instance?.Configuration ?? new PluginConfiguration();
         var requestingUser = HttpContext.User?.Identity?.Name ?? "unknown";
@@ -319,31 +314,6 @@ public class ArrProfileSwitcherController : ControllerBase
         }
 
         return status;
-    }
-
-    /// <summary>
-    /// Resolves the item that Radarr/Sonarr tracking actually keys off of. Movies and
-    /// Series are returned as-is; an Episode or Season is resolved up to its parent
-    /// Series (Sonarr tracks the whole series, not individual episodes/seasons) so the
-    /// three-dot menu works from inside a show, not just from the series page itself.
-    /// Anything else is returned unchanged and falls through to "Unsupported item type."
-    /// </summary>
-    private BaseItem ResolveEffectiveItem(BaseItem item)
-    {
-        Guid? seriesId = item switch
-        {
-            Episode episode => episode.SeriesId,
-            Season season => season.SeriesId,
-            _ => null
-        };
-
-        if (seriesId is null)
-        {
-            return item;
-        }
-
-        var series = _libraryManager.GetItemById(seriesId.Value);
-        return series ?? item;
     }
 
     private static bool TryGetProviderId(System.Collections.Generic.Dictionary<string, string> providerIds, string key, out int value)

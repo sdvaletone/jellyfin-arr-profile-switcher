@@ -23,9 +23,13 @@
         }
 
         var url = ApiClient.getUrl('ArrProfileSwitcher/Status', { itemId: itemId });
+        console.debug('[ArrProfileSwitcher] Status request for ' + itemId + ' -> ' + url);
         var promise = ApiClient.ajax({ type: 'GET', url: url }).then(function (resp) {
-            return typeof resp === 'string' ? JSON.parse(resp) : resp;
-        }).catch(function () {
+            var data = typeof resp === 'string' ? JSON.parse(resp) : resp;
+            console.debug('[ArrProfileSwitcher] Status response for ' + itemId + ':', data);
+            return data;
+        }).catch(function (err) {
+            console.error('[ArrProfileSwitcher] Status request failed for ' + itemId + ':', err);
             return null;
         });
 
@@ -113,35 +117,76 @@
 
     function injectIntoActionSheet(sheet) {
         if (!pendingItemId) {
+            console.debug('[ArrProfileSwitcher] injection skipped: no pending item id');
             return;
         }
 
         if (sheet.querySelector('.btnArrProfileOption')) {
+            console.debug('[ArrProfileSwitcher] injection skipped: already injected');
             return;
         }
 
         var itemId = pendingItemId;
         getStatus(itemId).then(function (status) {
-            if (!status || !status.Tracked || !status.Options || !status.Options.length) {
-                return;
-            }
+            try {
+                // A second menu can be opened (on a different item) before this Status
+                // request resolves -- if pendingItemId has since moved on, re-querying
+                // '.actionSheet' below would find that NEWER sheet and inject THIS item's
+                // (now-stale) options into it under the wrong item id entirely. Bail out
+                // unless this response still belongs to the item currently being watched.
+                if (itemId !== pendingItemId) {
+                    console.debug('[ArrProfileSwitcher] injection skipped: superseded by a newer menu (' + itemId + ' -> ' + pendingItemId + ')');
+                    return;
+                }
 
-            if (sheet.querySelector('.btnArrProfileOption')) {
-                return; // re-check after the async status call to avoid a double-inject
-            }
+                // Jellyfin's action sheet render can complete (or the sheet can be torn
+                // down/replaced rather than just mutated) while this Status request was
+                // still in flight -- re-query fresh instead of trusting the `sheet`
+                // reference captured back when the MutationObserver first fired, and bail
+                // out cleanly if it's gone rather than inserting into a detached node.
+                var freshSheet = document.querySelector('.actionSheet') || sheet;
+                if (!freshSheet || !document.body.contains(freshSheet)) {
+                    console.debug('[ArrProfileSwitcher] injection skipped: actionSheet no longer in the DOM for ' + itemId);
+                    return;
+                }
 
-            var scroller = sheet.querySelector('.actionSheetScroller') || sheet;
-            var cancelDiv = scroller.querySelector('.buttons');
+                if (!status) {
+                    console.debug('[ArrProfileSwitcher] injection skipped: Status request for ' + itemId + ' failed or returned nothing (see prior error above)');
+                    return;
+                }
 
-            var frag = document.createDocumentFragment();
-            for (var i = 0; i < status.Options.length; i++) {
-                frag.appendChild(createOptionMenuItem(itemId, status.Options[i]));
-            }
+                if (!status.Tracked) {
+                    console.debug('[ArrProfileSwitcher] injection skipped: ' + itemId + ' not tracked (' + status.Message + ')');
+                    return;
+                }
 
-            if (cancelDiv) {
-                scroller.insertBefore(frag, cancelDiv);
-            } else {
-                scroller.appendChild(frag);
+                if (!status.Options || !status.Options.length) {
+                    console.debug('[ArrProfileSwitcher] injection skipped: ' + itemId + ' tracked but no configured options');
+                    return;
+                }
+
+                if (freshSheet.querySelector('.btnArrProfileOption')) {
+                    console.debug('[ArrProfileSwitcher] injection skipped: already injected (post-async check)');
+                    return; // re-check after the async status call to avoid a double-inject
+                }
+
+                var scroller = freshSheet.querySelector('.actionSheetScroller') || freshSheet;
+                var cancelDiv = scroller.querySelector('.buttons');
+
+                var frag = document.createDocumentFragment();
+                for (var i = 0; i < status.Options.length; i++) {
+                    frag.appendChild(createOptionMenuItem(itemId, status.Options[i]));
+                }
+
+                if (cancelDiv) {
+                    scroller.insertBefore(frag, cancelDiv);
+                } else {
+                    scroller.appendChild(frag);
+                }
+
+                console.debug('[ArrProfileSwitcher] injected ' + status.Options.length + ' option(s) for ' + itemId);
+            } catch (err) {
+                console.error('[ArrProfileSwitcher] injectIntoActionSheet error for ' + itemId, err);
             }
         });
     }
@@ -200,6 +245,13 @@
                 return;
             }
 
+            // Reset on every trigger click rather than only on success -- otherwise a
+            // failed extraction here (no [data-id] ancestor, no id= in the hash) would
+            // silently fall through to whatever pendingItemId a PREVIOUS, unrelated click
+            // happened to leave behind, and the menu would inject options for the wrong
+            // item instead of visibly doing nothing.
+            pendingItemId = null;
+
             var card = trigger.closest('[data-id]');
             if (card) {
                 pendingItemId = card.getAttribute('data-id');
@@ -213,10 +265,13 @@
             }
 
             if (pendingItemId) {
+                console.debug('[ArrProfileSwitcher] menu trigger clicked, item id = ' + pendingItemId);
                 watchForActionSheet();
+            } else {
+                console.debug('[ArrProfileSwitcher] menu trigger clicked but no item id found (no [data-id] ancestor and no id= in the URL hash)');
             }
         } catch (err) {
-            return;
+            console.error('[ArrProfileSwitcher] click handler error', err);
         }
     }, true);
 
