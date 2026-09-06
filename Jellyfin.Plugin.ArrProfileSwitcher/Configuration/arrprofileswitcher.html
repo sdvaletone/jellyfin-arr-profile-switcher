@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>Arr Profile Switcher</title>
+</head>
+<body>
+<div id="ArrProfileSwitcherConfigPage"
+     data-role="page"
+     class="page type-interior pluginConfigurationPage"
+     data-require="emby-input,emby-button,emby-checkbox">
+    <div data-role="content">
+        <div class="content-primary">
+
+            <form id="ArrProfileSwitcherConfigForm">
+
+                <h2>Connections</h2>
+                <div class="fieldDescription" style="margin-bottom:1em;">
+                    API keys come from the <code>RADARR_API_KEY</code> / <code>SONARR_API_KEY</code>
+                    environment variables on the Jellyfin container — never entered here, never sent
+                    to a browser. Only the base URL (not secret) is editable below; it defaults to the
+                    container DNS name on the shared Docker network.
+                </div>
+
+                <div class="inputContainer">
+                    <label class="inputLabel inputLabelUnfocused" for="ApsRadarrUrl">Radarr URL</label>
+                    <input id="ApsRadarrUrl" name="ApsRadarrUrl" type="text" is="emby-input" required />
+                </div>
+
+                <div class="inputContainer">
+                    <label class="inputLabel inputLabelUnfocused" for="ApsSonarrUrl">Sonarr URL</label>
+                    <input id="ApsSonarrUrl" name="ApsSonarrUrl" type="text" is="emby-input" required />
+                </div>
+
+                <div class="inputContainer">
+                    <label class="inputLabel inputLabelUnfocused" for="ApsThrottleMinutes">Cooldown (minutes)</label>
+                    <input id="ApsThrottleMinutes" name="ApsThrottleMinutes" type="number" is="emby-input" min="1" step="1" required />
+                    <div class="fieldDescription">
+                        How long before the same item can be switched again. Prevents double-click /
+                        repeat search-command floods.
+                    </div>
+                </div>
+
+                <div style="margin-bottom:0.75em;">
+                    <button id="ApsReloadProfiles" is="emby-button" type="button" class="raised button-cancel">
+                        <span>Reload profiles from Radarr/Sonarr</span>
+                    </button>
+                </div>
+
+                <h2>Radarr — options users can switch movies to</h2>
+                <div class="fieldDescription" style="margin-bottom:1em;">
+                    Tick the profiles users should be offered on movies (e.g. 1080p and 4K), and give
+                    each a short label. Untouched profiles are simply never offered — nothing else about
+                    Radarr changes.
+                </div>
+                <div id="ApsRadarrList" style="margin-bottom:1.5em;">
+                    <div class="fieldDescription">Loading Radarr profiles…</div>
+                </div>
+
+                <h2>Sonarr — options users can switch shows to</h2>
+                <div class="fieldDescription" style="margin-bottom:1em;">
+                    Same idea, for series.
+                </div>
+                <div id="ApsSonarrList" style="margin-bottom:1.5em;">
+                    <div class="fieldDescription">Loading Sonarr profiles…</div>
+                </div>
+
+                <div>
+                    <button is="emby-button" type="submit" class="raised button-submit block emby-button">
+                        <span>Save</span>
+                    </button>
+                </div>
+            </form>
+
+        </div>
+    </div>
+
+    <script type="text/javascript">
+        (function () {
+            var ArrProfileSwitcherConfig = {
+                // Must match Plugin.Id in Plugin.cs, and `guid` in meta.json / build.yaml.
+                pluginUniqueId: '6556f718-0762-48ec-bc64-bac5b86ed0c6'
+            };
+
+            var page = document.querySelector('#ArrProfileSwitcherConfigPage');
+
+            // profileId (int, as string) -> { profileId, profileName, enabled, label, optionId }
+            var radarrState = {};
+            var sonarrState = {};
+
+            function escapeHtml(value) {
+                return (value == null ? '' : String(value))
+                    .replace(/&/g, '&amp;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;')
+                    .replace(/"/g, '&quot;')
+                    .replace(/'/g, '&#39;');
+            }
+
+            function toInt(value, fallback) {
+                var parsed = parseInt(value, 10);
+                return isNaN(parsed) ? fallback : parsed;
+            }
+
+            function newGuid() {
+                // RFC4122-ish v4, good enough for a client-generated opaque option id;
+                // the server treats OptionId as an opaque key, not a security boundary.
+                return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+                    var r = (Math.random() * 16) | 0;
+                    var v = c === 'x' ? r : ((r & 0x3) | 0x8);
+                    return v.toString(16);
+                });
+            }
+
+            function seedStateFromSavedOptions(saved) {
+                var state = {};
+                (saved || []).forEach(function (entry) {
+                    if (!entry) {
+                        return;
+                    }
+
+                    var key = String(entry.ArrProfileId);
+                    state[key] = {
+                        profileId: entry.ArrProfileId,
+                        profileName: entry.ArrProfileName || ('Profile ' + entry.ArrProfileId),
+                        enabled: true,
+                        label: entry.Label || entry.ArrProfileName || '',
+                        optionId: entry.OptionId
+                    };
+                });
+                return state;
+            }
+
+            function mergeLiveProfiles(state, profiles) {
+                (profiles || []).forEach(function (profile) {
+                    var key = String(profile.Id);
+                    if (state[key]) {
+                        state[key].profileName = profile.Name;
+                    } else {
+                        state[key] = {
+                            profileId: profile.Id,
+                            profileName: profile.Name,
+                            enabled: false,
+                            label: profile.Name,
+                            optionId: newGuid()
+                        };
+                    }
+                });
+                return state;
+            }
+
+            function renderList(containerId, state) {
+                var container = page.querySelector('#' + containerId);
+                var keys = Object.keys(state);
+
+                if (!keys.length) {
+                    container.innerHTML = '<div class="fieldDescription">No profiles found — check the URL and that RADARR_API_KEY / SONARR_API_KEY are set.</div>';
+                    return;
+                }
+
+                keys.sort(function (a, b) {
+                    return state[a].profileName.toLowerCase().localeCompare(state[b].profileName.toLowerCase());
+                });
+
+                var html = '';
+                for (var i = 0; i < keys.length; i++) {
+                    var entry = state[keys[i]];
+                    html += '<div class="apsProfileRow" data-key="' + escapeHtml(keys[i]) + '"'
+                        + ' style="display:flex;align-items:center;gap:1em;padding:0.25em 0;border-bottom:1px solid rgba(128,128,128,0.15);">'
+                        + '<label class="emby-checkbox-label" style="flex:0 0 auto;margin:0;min-width:12em;">'
+                        + '<input type="checkbox" is="emby-checkbox" class="apsEnabled" />'
+                        + '<span>' + escapeHtml(entry.profileName) + '</span></label>'
+                        + '<input type="text" is="emby-input" class="apsLabel" placeholder="Label shown to users" style="flex:1 1 auto;" />'
+                        + '</div>';
+                }
+
+                container.innerHTML = html;
+
+                var rows = container.querySelectorAll('.apsProfileRow');
+                for (var r = 0; r < rows.length; r++) {
+                    (function (row) {
+                        var key = row.getAttribute('data-key');
+                        var entry = state[key];
+                        var checkbox = row.querySelector('.apsEnabled');
+                        var label = row.querySelector('.apsLabel');
+
+                        checkbox.checked = !!entry.enabled;
+                        label.value = entry.label || '';
+                        label.disabled = !entry.enabled;
+
+                        checkbox.addEventListener('change', function () {
+                            entry.enabled = checkbox.checked;
+                            label.disabled = !checkbox.checked;
+                        });
+                        label.addEventListener('input', function () {
+                            entry.label = label.value;
+                        });
+                    })(rows[r]);
+                }
+            }
+
+            function loadProfilesFromArr() {
+                var url = ApiClient.getUrl('ArrProfileSwitcher/Profiles');
+                return ApiClient.getJSON(url).then(function (result) {
+                    mergeLiveProfiles(radarrState, result.Radarr || []);
+                    mergeLiveProfiles(sonarrState, result.Sonarr || []);
+                    renderList('ApsRadarrList', radarrState);
+                    renderList('ApsSonarrList', sonarrState);
+                }, function () {
+                    renderList('ApsRadarrList', radarrState);
+                    renderList('ApsSonarrList', sonarrState);
+                    Dashboard.alert({
+                        title: 'Arr Profile Switcher',
+                        message: 'Could not load profiles from Radarr/Sonarr. Saved selections are still shown; check the URLs and API keys.'
+                    });
+                });
+            }
+
+            function loadConfiguration() {
+                Dashboard.showLoadingMsg();
+                return ApiClient.getPluginConfiguration(ArrProfileSwitcherConfig.pluginUniqueId).then(function (config) {
+                    page.querySelector('#ApsRadarrUrl').value = config.RadarrUrl || 'http://radarr:7878';
+                    page.querySelector('#ApsSonarrUrl').value = config.SonarrUrl || 'http://sonarr:8989';
+                    page.querySelector('#ApsThrottleMinutes').value = config.ThrottleMinutes || 10;
+
+                    radarrState = seedStateFromSavedOptions(config.RadarrProfileOptions);
+                    sonarrState = seedStateFromSavedOptions(config.SonarrProfileOptions);
+
+                    return loadProfilesFromArr();
+                }).then(function () {
+                    Dashboard.hideLoadingMsg();
+                }, function () {
+                    Dashboard.hideLoadingMsg();
+                });
+            }
+
+            function buildOptionsArray(state) {
+                var out = [];
+                Object.keys(state).forEach(function (key) {
+                    var entry = state[key];
+                    if (!entry.enabled) {
+                        return;
+                    }
+
+                    out.push({
+                        OptionId: entry.optionId,
+                        Label: (entry.label || entry.profileName || '').trim() || entry.profileName,
+                        ArrProfileId: entry.profileId,
+                        ArrProfileName: entry.profileName
+                    });
+                });
+                return out;
+            }
+
+            page.querySelector('#ApsReloadProfiles').addEventListener('click', function () {
+                Dashboard.showLoadingMsg();
+                loadProfilesFromArr().then(function () {
+                    Dashboard.hideLoadingMsg();
+                }, function () {
+                    Dashboard.hideLoadingMsg();
+                });
+            });
+
+            page.addEventListener('pageshow', function () {
+                loadConfiguration();
+            });
+
+            page.querySelector('#ArrProfileSwitcherConfigForm').addEventListener('submit', function (e) {
+                e.preventDefault();
+                Dashboard.showLoadingMsg();
+
+                ApiClient.getPluginConfiguration(ArrProfileSwitcherConfig.pluginUniqueId).then(function (config) {
+                    config.RadarrUrl = (page.querySelector('#ApsRadarrUrl').value || '').trim() || 'http://radarr:7878';
+                    config.SonarrUrl = (page.querySelector('#ApsSonarrUrl').value || '').trim() || 'http://sonarr:8989';
+
+                    var throttle = toInt(page.querySelector('#ApsThrottleMinutes').value, 10);
+                    config.ThrottleMinutes = throttle > 0 ? throttle : 10;
+
+                    config.RadarrProfileOptions = buildOptionsArray(radarrState);
+                    config.SonarrProfileOptions = buildOptionsArray(sonarrState);
+
+                    return ApiClient.updatePluginConfiguration(ArrProfileSwitcherConfig.pluginUniqueId, config);
+                }).then(function (result) {
+                    Dashboard.hideLoadingMsg();
+                    Dashboard.processPluginConfigurationUpdateResult(result);
+                }, function () {
+                    Dashboard.hideLoadingMsg();
+                    Dashboard.alert({
+                        title: 'Arr Profile Switcher',
+                        message: 'Failed to save the configuration.'
+                    });
+                });
+
+                return false;
+            });
+        })();
+    </script>
+</div>
+</body>
+</html>

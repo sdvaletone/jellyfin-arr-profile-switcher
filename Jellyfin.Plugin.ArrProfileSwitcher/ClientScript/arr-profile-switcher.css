@@ -1,0 +1,15 @@
+/* Arr Profile Switcher client styles.
+   Deliberately minimal -- the injected menu item and detail button reuse Jellyfin's
+   own emby-button / actionSheetMenuItem / detailButton classes and inherit the
+   active theme automatically. Only tweak what those classes don't already cover. */
+
+.btnArrProfileOption[disabled] {
+    opacity: 0.6;
+}
+
+.btnArrProfileSwitcherDetail .detailButton-icon-text {
+    max-width: 6em;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}

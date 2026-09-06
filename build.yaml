@@ -1,0 +1,28 @@
+---
+# Jellyfin plugin build manifest (jprm / jellyfin-plugin-repo convention).
+#
+# This project is NOT published to the public Jellyfin plugin catalog; it is
+# built locally and installed by Ansible from a committed dist/ artifact,
+# same pattern as src/jellyfin-loudness-normalizer/build.yaml. No CI, no
+# GitHub Release.
+#
+# Keep `version` in sync with Directory.Build.props and meta.json.
+name: "Arr Profile Switcher"
+guid: "6556f718-0762-48ec-bc64-bac5b86ed0c6"
+version: "1.0.0.0"
+targetAbi: "10.11.0.0"
+framework: "net9.0"
+owner: "sdvaletone"
+overview: "Radarr/Sonarr quality-profile picker for Jellyfin Web."
+description: >
+  Lets any Jellyfin user switch a movie's or show's quality profile (from an
+  admin-curated option list per Radarr/Sonarr instance) and trigger a search,
+  right from the item detail page / three-dot menu. Radarr/Sonarr API keys
+  stay server-side; the client only ever talks to this plugin's own API.
+category: "General"
+artifacts:
+  - "Jellyfin.Plugin.ArrProfileSwitcher.dll"
+changelog: >
+  1.0.0.0 - Initial release. Admin-curated profile-option mapping,
+  GET /ArrProfileSwitcher/Status and POST /ArrProfileSwitcher/Upgrade,
+  File Transformation-based client script injection (menu + detail button).
