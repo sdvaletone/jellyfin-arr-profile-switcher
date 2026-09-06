@@ -32,4 +32,8 @@ changelog: >
   just the series itself. Fixed the detail-page picker button going stale
   (wrong item, or an unrefreshed label) after Jellyfin's SPA restores a
   cached page instance or after a same-item switch; full profile names no
-  longer get truncated under the button's icon.
+  longer get truncated under the button's icon. Fixed the admin config
+  page's profile-mapping table: the checkbox/profile-name column was
+  stretching to the full row width (Jellyfin's own .emby-checkbox-label
+  CSS defaults to width:100%), pushing each row's label input completely
+  outside the row instead of forming a proper two-column table.
