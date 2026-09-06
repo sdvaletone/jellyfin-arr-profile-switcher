@@ -1,8 +1,9 @@
 # Jellyfin.Plugin.ArrProfileSwitcher
 
-Lets any Jellyfin user switch a movie's or show's Radarr/Sonarr quality profile —
-from an admin-curated list of options (e.g. 1080p / 4K) — right from the item detail
-page or three-dot menu, and triggers a search. No separate Radarr/Sonarr login needed.
+Profile-switch menu item on the item detail page / three-dot menu, scoped to movies
+and series (not episodes). Options are admin-curated per Radarr/Sonarr instance (e.g.
+1080p / 4K); switching applies the profile and triggers a search. No Radarr/Sonarr
+login needed.
 
 ## Target
 

@@ -13,16 +13,16 @@ version: "1.0.0.0"
 targetAbi: "10.11.0.0"
 framework: "net9.0"
 owner: "sdvaletone"
-overview: "Radarr/Sonarr quality-profile picker for Jellyfin Web."
+overview: "Radarr/Sonarr quality-profile switcher for Jellyfin Web."
 description: >
-  Lets any Jellyfin user switch a movie's or show's quality profile (from an
-  admin-curated option list per Radarr/Sonarr instance) and trigger a search,
-  right from the item detail page / three-dot menu. Radarr/Sonarr API keys
-  stay server-side; the client only ever talks to this plugin's own API.
+  Profile-switch menu item on the item detail page and three-dot menu,
+  scoped to movies and series. Options are admin-curated per Radarr/Sonarr
+  instance; switching resolves the item, applies the profile, and triggers
+  a search server-side. API keys stay server-side.
 category: "General"
 artifacts:
   - "Jellyfin.Plugin.ArrProfileSwitcher.dll"
 changelog: >
-  1.0.0.0 - Initial release. Admin-curated profile-option mapping,
-  GET /ArrProfileSwitcher/Status and POST /ArrProfileSwitcher/Upgrade,
-  File Transformation-based client script injection (menu + detail button).
+  1.0.0.0 - Admin-curated profile-option mapping. GET /ArrProfileSwitcher/Status,
+  POST /ArrProfileSwitcher/Upgrade. File Transformation client-script injection
+  (menu + detail button).

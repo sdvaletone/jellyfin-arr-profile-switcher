@@ -69,18 +69,23 @@
     }
 
     function applyOption(itemId, optionId) {
+        console.debug('[ArrProfileSwitcher] applyOption called', { itemId: itemId, optionId: optionId });
         showToast('Updating quality profile…');
         var url = ApiClient.getUrl('ArrProfileSwitcher/Upgrade');
+        var body = JSON.stringify({ ItemId: itemId, OptionId: optionId });
+        console.debug('[ArrProfileSwitcher] Upgrade request -> ' + url, body);
         return ApiClient.ajax({
             type: 'POST',
             url: url,
-            data: JSON.stringify({ ItemId: itemId, OptionId: optionId }),
+            data: body,
             contentType: 'application/json'
         }).then(function (response) {
             var data = typeof response === 'string' ? JSON.parse(response) : response;
+            console.debug('[ArrProfileSwitcher] Upgrade response', data);
             showToast((data && data.Message) ? data.Message : 'Quality profile updated');
             invalidateStatus(itemId);
-        }).catch(function () {
+        }).catch(function (err) {
+            console.error('[ArrProfileSwitcher] Upgrade request failed', err);
             showToast('Could not update the quality profile');
         });
     }
@@ -107,6 +112,7 @@
             btn.disabled = true;
         } else {
             btn.addEventListener('click', function () {
+                console.debug('[ArrProfileSwitcher] option button clicked', option.Label);
                 closeDialog(btn);
                 applyOption(itemId, option.OptionId);
             });

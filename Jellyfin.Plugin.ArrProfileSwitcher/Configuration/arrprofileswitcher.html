@@ -16,10 +16,9 @@
 
                 <h2>Connections</h2>
                 <div class="fieldDescription" style="margin-bottom:1em;">
-                    API keys come from the <code>RADARR_API_KEY</code> / <code>SONARR_API_KEY</code>
-                    environment variables on the Jellyfin container — never entered here, never sent
-                    to a browser. Only the base URL (not secret) is editable below; it defaults to the
-                    container DNS name on the shared Docker network.
+                    Keys come from <code>RADARR_API_KEY</code> / <code>SONARR_API_KEY</code> on the
+                    Jellyfin container — not entered here, not sent to the browser. Only the base URL
+                    is editable; defaults to the container DNS name.
                 </div>
 
                 <div class="inputContainer">
@@ -36,8 +35,7 @@
                     <label class="inputLabel inputLabelUnfocused" for="ApsThrottleMinutes">Cooldown (minutes)</label>
                     <input id="ApsThrottleMinutes" name="ApsThrottleMinutes" type="number" is="emby-input" min="1" step="1" required />
                     <div class="fieldDescription">
-                        How long before the same item can be switched again. Prevents double-click /
-                        repeat search-command floods.
+                        Cooldown before the same item can be switched again.
                     </div>
                 </div>
 
@@ -49,9 +47,8 @@
 
                 <h2>Radarr — options users can switch movies to</h2>
                 <div class="fieldDescription" style="margin-bottom:1em;">
-                    Tick the profiles users should be offered on movies (e.g. 1080p and 4K), and give
-                    each a short label. Untouched profiles are simply never offered — nothing else about
-                    Radarr changes.
+                    Ticked profiles are offered to users on movies. Untouched profiles are never
+                    offered; nothing else in Radarr changes.
                 </div>
                 <div id="ApsRadarrList" style="margin-bottom:1.5em;">
                     <div class="fieldDescription">Loading Radarr profiles…</div>
@@ -162,15 +159,23 @@
                     return state[a].profileName.toLowerCase().localeCompare(state[b].profileName.toLowerCase());
                 });
 
-                var html = '';
+                var inputStyle = 'flex:1 1 auto;min-width:10em;padding:0.5em 0.75em;font-size:1em;'
+                    + 'color:inherit;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.3);'
+                    + 'border-radius:3px;';
+
+                var html = '<div style="display:flex;align-items:center;gap:1em;padding:0 0 0.35em;'
+                    + 'font-size:0.85em;text-transform:uppercase;letter-spacing:0.05em;opacity:0.6;">'
+                    + '<div style="flex:0 0 auto;min-width:12em;">Profile</div>'
+                    + '<div style="flex:1 1 auto;">Label shown to users</div>'
+                    + '</div>';
                 for (var i = 0; i < keys.length; i++) {
                     var entry = state[keys[i]];
                     html += '<div class="apsProfileRow" data-key="' + escapeHtml(keys[i]) + '"'
-                        + ' style="display:flex;align-items:center;gap:1em;padding:0.25em 0;border-bottom:1px solid rgba(128,128,128,0.15);">'
+                        + ' style="display:flex;align-items:center;gap:1em;padding:0.4em 0;border-bottom:1px solid rgba(128,128,128,0.15);">'
                         + '<label class="emby-checkbox-label" style="flex:0 0 auto;margin:0;min-width:12em;">'
                         + '<input type="checkbox" is="emby-checkbox" class="apsEnabled" />'
                         + '<span>' + escapeHtml(entry.profileName) + '</span></label>'
-                        + '<input type="text" is="emby-input" class="apsLabel" placeholder="Label shown to users" style="flex:1 1 auto;" />'
+                        + '<input type="text" class="apsLabel" placeholder="e.g. 4K" style="' + inputStyle + '" />'
                         + '</div>';
                 }
 
