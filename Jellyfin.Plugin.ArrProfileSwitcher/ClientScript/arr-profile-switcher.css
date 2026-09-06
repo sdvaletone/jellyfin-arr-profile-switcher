@@ -8,8 +8,11 @@
 }
 
 .btnArrProfileSwitcherDetail .detailButton-icon-text {
-    max-width: 6em;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    /* Admin-curated profile labels (e.g. "Movies-Anime-1080p") can run longer than
+       Jellyfin's own short built-in captions ("Play", "Info") -- show the full name
+       rather than truncating with an ellipsis at a fixed width. */
+    max-width: none;
+    overflow: visible;
+    text-overflow: clip;
     white-space: nowrap;
 }

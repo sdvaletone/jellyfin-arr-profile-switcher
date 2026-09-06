@@ -116,6 +116,7 @@
             console.debug('[ArrProfileSwitcher] Upgrade response', data);
             showToast((data && data.Message) ? data.Message : 'Quality profile updated');
             invalidateStatus(itemId);
+            removeStaleDetailButtons(itemId);
         }).catch(function (err) {
             console.error('[ArrProfileSwitcher] Upgrade request failed', err);
             showToast('Could not update the quality profile');
@@ -382,6 +383,20 @@
         }, 0);
     }
 
+    // Removes any injected detail button(s) bound to itemId, wherever in the document
+    // they are (Jellyfin's ViewManager can keep more than one previous detail-page DOM
+    // instance alive at once -- see injectDetailButton's remarks), so the next
+    // injectDetailButton pass recreates a fresh one instead of leaving a stale label
+    // showing the profile this item had *before* a just-applied switch.
+    function removeStaleDetailButtons(itemId) {
+        var stale = document.querySelectorAll('.btnArrProfileSwitcherDetail[data-item-id="' + itemId + '"]');
+        for (var i = 0; i < stale.length; i++) {
+            if (stale[i].parentNode) {
+                stale[i].parentNode.removeChild(stale[i]);
+            }
+        }
+    }
+
     function injectDetailButton() {
         try {
             var page = document.querySelector('.libraryPage:not(.hide), .itemDetailPage:not(.hide), .detailPage:not(.hide)');
@@ -402,8 +417,22 @@
                 return;
             }
 
-            if (row.querySelector('.btnArrProfileSwitcherDetail')) {
-                return;
+            // Jellyfin's ViewManager can restore a previously-visited detail page from
+            // its own cache instead of always building a fresh DOM tree (confirmed live:
+            // "[ViewManagerPage] restoring view" / "tryRestoreView" in the console) -- so
+            // a button already in this row may belong to whatever item was showing the
+            // LAST time this exact page instance was live, not necessarily this one. Only
+            // treat it as up to date if its recorded item id still matches; otherwise
+            // replace it rather than permanently skipping (the old "already injected,
+            // do nothing" check left both a dead click handler bound to the wrong item
+            // AND a stale profile-name label after any switch).
+            var existing = row.querySelector('.btnArrProfileSwitcherDetail');
+            if (existing) {
+                if (existing.getAttribute('data-item-id') === itemId) {
+                    return;
+                }
+
+                existing.parentNode.removeChild(existing);
             }
 
             getStatus(itemId).then(function (status) {
@@ -411,8 +440,13 @@
                     return;
                 }
 
-                if (row.querySelector('.btnArrProfileSwitcherDetail')) {
-                    return;
+                var current = row.querySelector('.btnArrProfileSwitcherDetail');
+                if (current) {
+                    if (current.getAttribute('data-item-id') === itemId) {
+                        return; // re-check after the async status call to avoid a double-inject
+                    }
+
+                    current.parentNode.removeChild(current);
                 }
 
                 var btn = document.createElement('button');
@@ -420,6 +454,7 @@
                 btn.type = 'button';
                 btn.className = 'button-flat detailButton emby-button btnArrProfileSwitcherDetail';
                 btn.title = 'Change quality profile';
+                btn.setAttribute('data-item-id', itemId);
                 btn.innerHTML =
                     '<div class="detailButton-content">' +
                         '<span class="material-icons detailButton-icon" aria-hidden="true"></span>' +
@@ -428,6 +463,7 @@
                 // Material Icons renders from the span's text content (a font ligature),
                 // not a CSS class.
                 btn.querySelector('.detailButton-icon').textContent = 'hd';
+
                 btn.querySelector('.detailButton-icon-text').textContent = status.CurrentProfileName || 'Quality';
 
                 btn.addEventListener('click', function (e) {

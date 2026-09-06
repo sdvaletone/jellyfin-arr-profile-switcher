@@ -29,4 +29,7 @@ changelog: >
   atomic upgrade-cooldown, safe parsing of Radarr/Sonarr responses, HTTP
   client timeout, no hardcoded Radarr/Sonarr URL defaults. TV seasons are now
   also switchable (resolves to the parent series, sharing its cooldown), not
-  just the series itself.
+  just the series itself. Fixed the detail-page picker button going stale
+  (wrong item, or an unrefreshed label) after Jellyfin's SPA restores a
+  cached page instance or after a same-item switch; full profile names no
+  longer get truncated under the button's icon.
