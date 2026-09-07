@@ -44,9 +44,13 @@ jobs:
     permissions:
       contents: write
     steps:
+      # No explicit `ref:` — defaults to the tag's own commit (github.sha), same as
+      # build-test's checkout, so the packaged artifact always matches exactly what
+      # `needs: build-test` gated on. Pushing HEAD:main below then only succeeds as a
+      # fast-forward when the tag was cut from main's current tip (the documented
+      # release flow); if it wasn't, the push fails loudly instead of silently
+      # packaging the wrong commit.
       - uses: actions/checkout@v4
-        with:
-          ref: main
 
       - uses: actions/setup-dotnet@v4
         with:
@@ -67,7 +71,11 @@ jobs:
           PIP_BREAK_SYSTEM_PACKAGES: "1"
         run: |
           set -euo pipefail
-          pip install --user jprm==1.1.1
+          # 1.1.1 (the Action's pinned tag) was never published to PyPI — only
+          # 1.1.0 is available there; confirmed against pypi.org/pypi/jprm/1.1.1/json
+          # (404) vs 1.1.0 (exists). This install is independent of the Action's own
+          # vendored copy used in the previous step.
+          pip install --user jprm==1.1.0
           test -f manifest.json || python3 -m jprm repo init manifest.json
           python3 -m jprm repo add manifest.json "${{ steps.jprm.outputs.artifact }}" \
             --url="https://raw.githubusercontent.com/${{ github.repository }}/main"
