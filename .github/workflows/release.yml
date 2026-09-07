@@ -1,0 +1,94 @@
+# CI for the public repo only. `git subtree split --prefix=src/jellyfin-arr-profile-switcher`
+# (see docs/jellyfin-arr-profile-switcher-deployment.md in the private monorepo) puts this
+# file at the public repo's own `.github/workflows/release.yml`, which is the only location
+# GitHub Actions reads workflows from — it is inert sitting under a nested `.github` here in
+# the monorepo.
+#
+# On every push/PR: restore, build, and run the xunit suite for fast feedback.
+# On a `v*` tag push: package the plugin with jprm (https://github.com/oddstr13/jellyfin-plugin-repository-manager),
+# append/update its entry in manifest.json (the file the README's install instructions
+# already point at via raw.githubusercontent.com/.../main/manifest.json), commit that plus
+# the packaged zip back to main, and publish a GitHub Release with the same zip attached.
+name: Build, test, and release
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "9.0.x"
+
+      - name: Restore
+        run: dotnet restore Jellyfin.Plugin.ArrProfileSwitcher.sln
+
+      - name: Build
+        run: dotnet build Jellyfin.Plugin.ArrProfileSwitcher.sln -c Release --no-restore
+
+      - name: Test
+        run: dotnet test Jellyfin.Plugin.ArrProfileSwitcher.sln -c Release --no-build
+
+  release:
+    needs: build-test
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "9.0.x"
+
+      # Builds the project(s) declared by build.yaml (dotnet clean/restore/publish under
+      # the hood) and zips the artifacts it lists, plus a generated meta.json, into
+      # ./artifacts/<slug>_<version>.zip. Pinned to the v1.1.1 tag's commit.
+      - name: Build plugin package
+        id: jprm
+        uses: oddstr13/jellyfin-plugin-repository-manager@9497a0a499416cc572ed2e07a391d9f943a37b4d # v1.1.1
+        with:
+          path: .
+          output: ./artifacts
+
+      - name: Update manifest.json
+        env:
+          PIP_BREAK_SYSTEM_PACKAGES: "1"
+        run: |
+          set -euo pipefail
+          pip install --user jprm==1.1.1
+          test -f manifest.json || python3 -m jprm repo init manifest.json
+          python3 -m jprm repo add manifest.json "${{ steps.jprm.outputs.artifact }}" \
+            --url="https://raw.githubusercontent.com/${{ github.repository }}/main"
+
+      - name: Commit manifest and packaged artifact
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          # jprm writes the zip (+ .md5sum/.meta.json sidecars) under a slugified
+          # plugin-name subdirectory, so a plain glob wouldn't reliably match it —
+          # add everything; artifacts/ (the jprm build scratch dir) is gitignored.
+          git add -A
+          git commit -m "release: ${{ github.ref_name }}" || echo "Nothing to commit"
+          git push origin HEAD:main
+
+      - name: Create GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh release create "${{ github.ref_name }}" "${{ steps.jprm.outputs.artifact }}" \
+            --title "${{ github.ref_name }}" \
+            --generate-notes

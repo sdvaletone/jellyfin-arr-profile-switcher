@@ -87,6 +87,15 @@ of via the repository above.
 | `GET /ArrProfileSwitcher/Status?itemId=` | Any user | Whether an item is tracked, its current profile, and the selectable options. |
 | `POST /ArrProfileSwitcher/Upgrade` | Any user | `{ ItemId, OptionId }` — applies the chosen admin-curated option and triggers a search. |
 
+## Contributing
+
+This repository is a synced mirror of a private monorepo — it's the full,
+authoritative plugin source (not a submodule or a stub), but changes here are
+merged in on the private side and re-synced out, rather than merged directly
+on GitHub. Issues and pull requests are welcome; a PR may take a bit longer to
+land than usual and won't show a normal GitHub merge commit when it does, but
+it will get reviewed and credited.
+
 ## License
 
 MIT — see [LICENSE](LICENSE).
