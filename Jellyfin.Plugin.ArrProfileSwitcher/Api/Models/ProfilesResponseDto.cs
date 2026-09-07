@@ -3,7 +3,7 @@ using System.Collections.Generic;
 namespace Jellyfin.Plugin.ArrProfileSwitcher.Api.Models;
 
 /// <summary>
-/// Response for <c>GET /ArrProfileSwitcher/Profiles</c> (admin-only) — the real
+/// Response for <c>GET /ArrProfileSwitcher/Profiles</c> (admin-only) - the real
 /// quality profiles on each instance, used to populate the option-mapping editor.
 /// </summary>
 public class ProfilesResponseDto

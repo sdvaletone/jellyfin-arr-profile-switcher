@@ -8,7 +8,7 @@ namespace Jellyfin.Plugin.ArrProfileSwitcher.Api.Models;
 /// </summary>
 /// <remarks>
 /// Deliberately carries only the plugin's own opaque <see cref="OptionId"/> and a
-/// display <see cref="Label"/> — never the underlying Radarr/Sonarr profile id, which
+/// display <see cref="Label"/> - never the underlying Radarr/Sonarr profile id, which
 /// stays server-side (see Configuration/ProfileOptionMapping.cs).
 /// </remarks>
 public class ProfileOptionDto

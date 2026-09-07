@@ -2,13 +2,13 @@
 # Jellyfin plugin build manifest (jprm / jellyfin-plugin-repo convention).
 #
 # This file is the source of truth for the public repo's release automation
-# (.github/workflows/release.yml, present only in the public repo split — see
+# (.github/workflows/release.yml, present only in the public repo split - see
 # docs/jellyfin-arr-profile-switcher-deployment.md), which packages a tagged
 # commit with jprm and publishes it as a GitHub Release + manifest.json entry.
 #
 # This private monorepo's own copy of the plugin is unaffected by that: it's
 # still built locally and installed by Ansible from a committed dist/
-# artifact, same pattern as src/jellyfin-loudness-normalizer/build.yaml — no
+# artifact, same pattern as src/jellyfin-loudness-normalizer/build.yaml - no
 # CI runs against this path here, and dist/ is not what the public release
 # artifact is built from.
 #

@@ -4,6 +4,6 @@ obj/
 *.suo
 .vs/
 
-# CI packaging scratch dir (see .github/workflows/release.yml) — jprm's committed
+# CI packaging scratch dir (see .github/workflows/release.yml) - jprm's committed
 # output (manifest.json + <slug>/<slug>_<version>.zip) is what actually gets tracked.
 artifacts/

@@ -8,7 +8,7 @@ namespace Jellyfin.Plugin.ArrProfileSwitcher.Services;
 
 /// <summary>
 /// Thin Sonarr v3 REST client (series lookup by <c>tvdbId</c>; quality profile names are
-/// whatever the admin has configured in Sonarr — e.g. <c>TV-1080p</c>/<c>TV-4K</c> if
+/// whatever the admin has configured in Sonarr - e.g. <c>TV-1080p</c>/<c>TV-4K</c> if
 /// following Recyclarr/TRaSH-guide naming conventions).
 /// </summary>
 public class SonarrClient : ArrClientBase

@@ -16,14 +16,14 @@ namespace Jellyfin.Plugin.ArrProfileSwitcher.Services;
 /// </summary>
 /// <remarks>
 /// Reads a full JSON record, mutates only <c>qualityProfileId</c>, and PUTs the whole
-/// object back — Radarr/Sonarr's v3 API requires the complete resource on PUT, so a
+/// object back - Radarr/Sonarr's v3 API requires the complete resource on PUT, so a
 /// narrow strongly-typed DTO would silently drop every other field (root folder,
 /// tags, images, monitoring…) on save. This is the same read-modify-write pattern
 /// commonly used by other *arr integrations for the same reason.
 /// <para/>
 /// The API key is read fresh from an environment variable on every call rather than
 /// cached at startup, and is never logged, returned to a caller, or stored in
-/// <see cref="Configuration.PluginConfiguration"/> — see the security notes on
+/// <see cref="Configuration.PluginConfiguration"/> - see the security notes on
 /// <see cref="Configuration.PluginConfiguration"/> and the plugin README.
 /// </remarks>
 public abstract class ArrClientBase
@@ -59,7 +59,7 @@ public abstract class ArrClientBase
     private string? ApiKey => Environment.GetEnvironmentVariable(ApiKeyEnvVar);
 
     /// <summary>
-    /// Gets a value indicating whether both a base URL (admin-configured, no default —
+    /// Gets a value indicating whether both a base URL (admin-configured, no default -
     /// see <see cref="Configuration.PluginConfiguration"/>) and an API key are present.
     /// <see cref="System.Net.Http.HttpClient.SendAsync(System.Net.Http.HttpRequestMessage,CancellationToken)"/>
     /// throws on a relative request URI when <see cref="BaseUrl"/> is empty (no

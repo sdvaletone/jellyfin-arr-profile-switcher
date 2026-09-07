@@ -1,7 +1,7 @@
 # CI for the public repo only. `git subtree split --prefix=src/jellyfin-arr-profile-switcher`
 # (see docs/jellyfin-arr-profile-switcher-deployment.md in the private monorepo) puts this
 # file at the public repo's own `.github/workflows/release.yml`, which is the only location
-# GitHub Actions reads workflows from — it is inert sitting under a nested `.github` here in
+# GitHub Actions reads workflows from - it is inert sitting under a nested `.github` here in
 # the monorepo.
 #
 # On every push/PR: restore, build, and run the xunit suite for fast feedback.
@@ -44,7 +44,7 @@ jobs:
     permissions:
       contents: write
     steps:
-      # No explicit `ref:` — defaults to the tag's own commit (github.sha), same as
+      # No explicit `ref:` - defaults to the tag's own commit (github.sha), same as
       # build-test's checkout, so the packaged artifact always matches exactly what
       # `needs: build-test` gated on. Pushing HEAD:main below then only succeeds as a
       # fast-forward when the tag was cut from main's current tip (the documented
@@ -71,7 +71,7 @@ jobs:
           PIP_BREAK_SYSTEM_PACKAGES: "1"
         run: |
           set -euo pipefail
-          # 1.1.1 (the Action's pinned tag) was never published to PyPI — only
+          # 1.1.1 (the Action's pinned tag) was never published to PyPI - only
           # 1.1.0 is available there; confirmed against pypi.org/pypi/jprm/1.1.1/json
           # (404) vs 1.1.0 (exists). This install is independent of the Action's own
           # vendored copy used in the previous step.
@@ -86,7 +86,7 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           # jprm writes the zip (+ .md5sum/.meta.json sidecars) under a slugified
-          # plugin-name subdirectory, so a plain glob wouldn't reliably match it —
+          # plugin-name subdirectory, so a plain glob wouldn't reliably match it -
           # add everything; artifacts/ (the jprm build scratch dir) is gitignored.
           git add -A
           git commit -m "release: ${{ github.ref_name }}" || echo "Nothing to commit"

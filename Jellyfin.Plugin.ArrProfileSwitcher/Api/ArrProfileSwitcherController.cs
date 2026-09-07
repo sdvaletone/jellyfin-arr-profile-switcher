@@ -23,11 +23,11 @@ namespace Jellyfin.Plugin.ArrProfileSwitcher.Api;
 /// (<c>ClientScript/arr-profile-switcher.js</c>) and the admin config page.
 /// </summary>
 /// <remarks>
-/// Security model (see plugin README): Radarr/Sonarr API keys never leave the server —
+/// Security model (see plugin README): Radarr/Sonarr API keys never leave the server -
 /// <see cref="GetProfiles"/> is admin-only and only ever returns profile names/ids for
 /// the mapping editor; <see cref="GetStatus"/> and <see cref="PostUpgrade"/> are open to
 /// any authenticated Jellyfin user but only ever expose/accept the plugin's own opaque
-/// <see cref="ProfileOptionMapping.OptionId"/> — never a raw Radarr/Sonarr profile id.
+/// <see cref="ProfileOptionMapping.OptionId"/> - never a raw Radarr/Sonarr profile id.
 /// </remarks>
 [ApiController]
 [Route("ArrProfileSwitcher")]
@@ -68,7 +68,7 @@ public class ArrProfileSwitcherController : ControllerBase
 
     /// <summary>
     /// Resolves the authenticated caller from the current request, for the
-    /// item-visibility check on <see cref="GetStatus"/>/<see cref="PostUpgrade"/> — both
+    /// item-visibility check on <see cref="GetStatus"/>/<see cref="PostUpgrade"/> - both
     /// endpoints are open to any logged-in user (see class remarks), so a restricted or
     /// parental-controlled item must not be accessible via a guessed/enumerated item id.
     /// </summary>
@@ -128,7 +128,7 @@ public class ArrProfileSwitcherController : ControllerBase
         var requestingUser = GetRequestingUser();
         if (requestingUser is null || !item.IsVisible(requestingUser))
         {
-            // Deliberately identical to the "doesn't exist" response — a restricted item
+            // Deliberately identical to the "doesn't exist" response - a restricted item
             // must not be distinguishable from a nonexistent one via this endpoint.
             return Ok(new StatusDto { Tracked = false, Message = "Item not found." });
         }
@@ -201,7 +201,7 @@ public class ArrProfileSwitcherController : ControllerBase
         var callingUser = GetRequestingUser();
         if (callingUser is null || !item.IsVisible(callingUser))
         {
-            // Deliberately identical to the "doesn't exist" response — see GetStatus.
+            // Deliberately identical to the "doesn't exist" response - see GetStatus.
             return Ok(new UpgradeResultDto { Success = false, Message = "Item not found." });
         }
 
@@ -303,7 +303,7 @@ public class ArrProfileSwitcherController : ControllerBase
             return Ok(new UpgradeResultDto
             {
                 Success = false,
-                Message = $"Already requested recently — try again in {Math.Ceiling(remaining.TotalMinutes)} more minute(s).",
+                Message = $"Already requested recently - try again in {Math.Ceiling(remaining.TotalMinutes)} more minute(s).",
                 SearchTriggered = false
             });
         }
@@ -329,14 +329,14 @@ public class ArrProfileSwitcherController : ControllerBase
         return Ok(new UpgradeResultDto
         {
             Success = true,
-            Message = searchOk ? $"Switched to {option.Label} — search started." : $"Switched to {option.Label}, but the search could not be started.",
+            Message = searchOk ? $"Switched to {option.Label} - search started." : $"Switched to {option.Label}, but the search could not be started.",
             SearchTriggered = searchOk
         });
     }
 
     /// <summary>
     /// Resolves the Sonarr-tracked <see cref="Series"/> target for an item: the
-    /// <see cref="Series"/> itself, or — since Sonarr has no per-season quality profile —
+    /// <see cref="Series"/> itself, or - since Sonarr has no per-season quality profile -
     /// a <see cref="Season"/>'s parent series, so a season page switches/displays the same
     /// series-wide profile a series page would. Deliberately does NOT resolve an
     /// <see cref="Episode"/>'s parent series: per-episode switching was never wanted (see

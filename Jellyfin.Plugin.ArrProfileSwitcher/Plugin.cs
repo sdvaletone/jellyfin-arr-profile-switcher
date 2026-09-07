@@ -65,7 +65,7 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages
                     "{0}.Configuration.arrprofileswitcher.html",
                     ns)
             },
-            // Served at /web/configurationpage?name=arrProfileSwitcher.js — same mechanism
+            // Served at /web/configurationpage?name=arrProfileSwitcher.js - same mechanism
             // WhisperSubs uses live on this server (confirmed via its own served index.html:
             // <script src="configurationpage?name=whisperSubs.js">) to ship a plugin's own
             // client script without a bespoke controller endpoint.

@@ -19,7 +19,7 @@
     <!--
       Pinned to the exact running server version (10.11.11), matching the
       loudness-normalizer plugin. ExcludeAssets=runtime keeps Jellyfin's own
-      assemblies out of the publish output — the packaged artifact must be
+      assemblies out of the publish output - the packaged artifact must be
       just Jellyfin.Plugin.ArrProfileSwitcher.dll + meta.json.
     -->
     <PackageReference Include="Jellyfin.Controller" Version="10.11.11">
@@ -34,7 +34,7 @@
     <!--
       Needed only to build the JObject payload handed to the File
       Transformation plugin's reflection-based registration API (see
-      Services/StartupService.cs) — Jellyfin itself already loads
+      Services/StartupService.cs) - Jellyfin itself already loads
       Newtonsoft.Json at runtime (confirmed live: the installed
       jellyfin-plugin-home-sections 2.5.11.0 references it the same way),
       so ExcludeAssets=runtime avoids shipping a second copy.

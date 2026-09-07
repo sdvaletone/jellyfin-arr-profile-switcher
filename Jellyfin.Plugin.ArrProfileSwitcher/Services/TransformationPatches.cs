@@ -8,7 +8,7 @@ namespace Jellyfin.Plugin.ArrProfileSwitcher.Services;
 /// <remarks>
 /// Mirrors the same registration + patch-method shape used by
 /// <c>Jellyfin.Plugin.HomeScreenSections.Helpers.TransformationPatches.IndexHtml</c>
-/// (a popular community plugin) — confirmed via that plugin's public source.
+/// (a popular community plugin) - confirmed via that plugin's public source.
 /// </remarks>
 public static class TransformationPatches
 {

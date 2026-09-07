@@ -7,7 +7,7 @@ namespace Jellyfin.Plugin.ArrProfileSwitcher.Configuration;
 /// Sonarr instance.
 /// </summary>
 /// <remarks>
-/// <see cref="OptionId"/> is the plugin's own opaque key — it is what the client ever
+/// <see cref="OptionId"/> is the plugin's own opaque key - it is what the client ever
 /// sends back in <c>POST /ArrProfileSwitcher/Upgrade</c>. The real Radarr/Sonarr
 /// <see cref="ArrProfileId"/> is resolved server-side from this mapping and never
 /// accepted directly from a client, so a caller can only ever pick one of the options

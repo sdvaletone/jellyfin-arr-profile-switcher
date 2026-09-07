@@ -11,7 +11,7 @@ namespace Jellyfin.Plugin.ArrProfileSwitcher.Services;
 /// Registered as a DI singleton (see <see cref="PluginServiceRegistrator"/>) so state
 /// is shared across requests, same pattern as
 /// <c>src/jellyfin-loudness-normalizer/.../Services/LoudnessNormalizerState.cs</c>.
-/// Lost on Jellyfin restart, which is fine — the cooldown only needs to survive a
+/// Lost on Jellyfin restart, which is fine - the cooldown only needs to survive a
 /// handful of minutes, not across restarts.
 /// </remarks>
 public class ArrUpgradeThrottleState
@@ -44,7 +44,7 @@ public class ArrUpgradeThrottleState
         var reserved = false;
 
         // AddOrUpdate's factories can run more than once under contention, but the
-        // dictionary guarantees only one call's return value is ever stored per key —
+        // dictionary guarantees only one call's return value is ever stored per key -
         // so exactly one concurrent caller observes reserved=true even when several
         // race here for the same itemId (fixes a prior TOCTOU: separate
         // TryGetValue + indexer-set let two concurrent requests both pass the check).

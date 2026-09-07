@@ -17,17 +17,17 @@ namespace Jellyfin.Plugin.ArrProfileSwitcher.Services;
 /// </summary>
 /// <remarks>
 /// Plugins are loaded into separate <see cref="AssemblyLoadContext"/>s, so File
-/// Transformation cannot be referenced directly — registration goes through
+/// Transformation cannot be referenced directly - registration goes through
 /// reflection against its <c>PluginInterface.RegisterTransformation(JObject)</c>
 /// method, exactly as documented in that plugin's README and as used by
 /// <c>Jellyfin.Plugin.HomeScreenSections.Services.StartupService</c> (a popular
 /// community plugin). Done as an <see cref="IScheduledTask"/> with a startup
-/// trigger — not in <see cref="PluginServiceRegistrator"/> — because File
+/// trigger - not in <see cref="PluginServiceRegistrator"/> - because File
 /// Transformation's own services may not be registered into Jellyfin's DI container
 /// yet while plugins are still being loaded (same reasoning HomeScreenSections uses).
 /// <para/>
 /// If File Transformation isn't installed, this logs a warning and does nothing else
-/// — the admin config page and the read/write API still work, only the client-side
+/// - the admin config page and the read/write API still work, only the client-side
 /// picker never appears in the web UI.
 /// </remarks>
 public class StartupService : IScheduledTask
@@ -86,7 +86,7 @@ public class StartupService : IScheduledTask
             {
                 _logger.LogWarning(
                     "File Transformation plugin found but its PluginInterface.RegisterTransformation method " +
-                    "could not be located (API may have changed) — client script not injected.");
+                    "could not be located (API may have changed) - client script not injected.");
                 return Task.CompletedTask;
             }
 

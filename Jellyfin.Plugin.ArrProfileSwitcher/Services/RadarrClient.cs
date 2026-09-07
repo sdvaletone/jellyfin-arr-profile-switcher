@@ -8,7 +8,7 @@ namespace Jellyfin.Plugin.ArrProfileSwitcher.Services;
 
 /// <summary>
 /// Thin Radarr v3 REST client (movie lookup by <c>tmdbId</c>; quality profile names are
-/// whatever the admin has configured in Radarr — e.g. <c>Movies-1080p</c>/<c>Movies-4K</c>
+/// whatever the admin has configured in Radarr - e.g. <c>Movies-1080p</c>/<c>Movies-4K</c>
 /// if following Recyclarr/TRaSH-guide naming conventions).
 /// </summary>
 public class RadarrClient : ArrClientBase

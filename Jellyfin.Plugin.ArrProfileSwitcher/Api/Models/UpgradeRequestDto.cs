@@ -6,7 +6,7 @@ namespace Jellyfin.Plugin.ArrProfileSwitcher.Api.Models;
 /// Request body for <c>POST /ArrProfileSwitcher/Upgrade</c>.
 /// </summary>
 /// <remarks>
-/// Deliberately carries no arr profile id — only the plugin's own opaque
+/// Deliberately carries no arr profile id - only the plugin's own opaque
 /// <see cref="OptionId"/>, which the server resolves against the admin-configured
 /// mapping for the item's app. See Configuration/ProfileOptionMapping.cs.
 /// </remarks>

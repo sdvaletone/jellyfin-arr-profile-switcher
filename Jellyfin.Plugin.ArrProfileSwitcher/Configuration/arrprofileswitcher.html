@@ -17,7 +17,7 @@
                 <h2>Connections</h2>
                 <div class="fieldDescription" style="margin-bottom:1em;">
                     Keys come from <code>RADARR_API_KEY</code> / <code>SONARR_API_KEY</code> on the
-                    Jellyfin container — not entered here, not sent to the browser. Only the base URL
+                    Jellyfin container - not entered here, not sent to the browser. Only the base URL
                     is editable; defaults to the container DNS name.
                 </div>
 
@@ -45,7 +45,7 @@
                     </button>
                 </div>
 
-                <h2>Radarr — options users can switch movies to</h2>
+                <h2>Radarr - options users can switch movies to</h2>
                 <div class="fieldDescription" style="margin-bottom:1em;">
                     Ticked profiles are offered to users on movies. Untouched profiles are never
                     offered; nothing else in Radarr changes.
@@ -54,7 +54,7 @@
                     <div class="fieldDescription">Loading Radarr profiles…</div>
                 </div>
 
-                <h2>Sonarr — options users can switch shows to</h2>
+                <h2>Sonarr - options users can switch shows to</h2>
                 <div class="fieldDescription" style="margin-bottom:1em;">
                     Same idea, for series.
                 </div>
@@ -151,7 +151,7 @@
                 var keys = Object.keys(state);
 
                 if (!keys.length) {
-                    container.innerHTML = '<div class="fieldDescription">No profiles found — check the URL and that RADARR_API_KEY / SONARR_API_KEY are set.</div>';
+                    container.innerHTML = '<div class="fieldDescription">No profiles found - check the URL and that RADARR_API_KEY / SONARR_API_KEY are set.</div>';
                     return;
                 }
 

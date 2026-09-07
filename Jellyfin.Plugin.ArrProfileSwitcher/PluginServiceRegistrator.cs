@@ -22,7 +22,7 @@ public class PluginServiceRegistrator : IPluginServiceRegistrator
     /// <inheritdoc />
     public void RegisterServices(IServiceCollection serviceCollection, IServerApplicationHost applicationHost)
     {
-        // Shared cooldown state — must be a singleton so it's the same instance across
+        // Shared cooldown state - must be a singleton so it's the same instance across
         // every request, not recreated per (transient/scoped) controller instance.
         serviceCollection.AddSingleton<ArrUpgradeThrottleState>();
 

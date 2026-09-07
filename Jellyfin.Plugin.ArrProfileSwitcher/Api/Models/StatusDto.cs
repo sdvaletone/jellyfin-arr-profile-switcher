@@ -3,7 +3,7 @@ using System.Collections.Generic;
 namespace Jellyfin.Plugin.ArrProfileSwitcher.Api.Models;
 
 /// <summary>
-/// Response for <c>GET /ArrProfileSwitcher/Status?itemId=</c> — everything the client
+/// Response for <c>GET /ArrProfileSwitcher/Status?itemId=</c> - everything the client
 /// script needs to decide whether to show the picker and what to show in it.
 /// </summary>
 public class StatusDto
